@@ -531,7 +531,7 @@ gen_create_session_request(#gtp_session{imsi = Imsi,
                   },
                   #v2_eps_bearer_id{eps_bearer_id = Bearer#gtp_bearer.ebi},
                   #v2_fully_qualified_tunnel_endpoint_identifier{
-                    instance = Bearer#gtp_bearer.ebi,
+                    instance = 5, %% "S2b-U ePDG F-TEID", Table 7.2.1-2
                     interface_type = 31, %% "S2b-U ePDG GTP-U"
                     key = Bearer#gtp_bearer.local_data_tei,
                     ipv4 = conv:ip_to_bin(LocalAddrGtpu)
@@ -588,7 +588,7 @@ gen_create_bearer_response(Req = #gtp{version = v2, type = create_bearer_request
         },
         #v2_eps_bearer_id{eps_bearer_id = Bearer#gtp_bearer.ebi},
         #v2_fully_qualified_tunnel_endpoint_identifier{
-        instance = 0,
+        instance = 8, %% "S2b-U ePDG F-TEID", Table 7.2.4-2
         interface_type = 31, %% "S2b-U ePDG GTP-U"
         key = Bearer#gtp_bearer.local_data_tei,
         ipv4 = conv:ip_to_bin(LocalAddrGtpu)
