@@ -62,6 +62,17 @@ ip_to_bin(IP) when is_binary(IP) ->
     bin_to_ip({_, _, _, _, _, _, _, _} = IP) ->
         IP.
 
+%% Remove "IPv6 Prefix Length" from PAA (3GPP TS 29.274 Table 8.14).
+remove_v6_prefix_len_byte(<<_:8, Rest/binary>>) -> Rest.
+
+get_6_from_bin(<< IPv6:16/binary >>) -> list_to_tuple(binary_to_list(IPv6)).
+
+get_v4v6(<< IPv6:16/binary >>, << IPv4:4/binary >>) -> << 8, IPv6/binary, IPv4/binary >>.
+
+get_4_from_v4v6(<< _:8, _IPv6:16/binary, IPv4:4/binary >>) -> IPv4.
+
+get_6_from_v4v6(<< _:8, IPv6:16/binary, _IPv4:4/binary >>) -> IPv6.
+
 -spec cause_gtp2gsup(integer()) -> integer().
 
 cause_gtp2gsup(?GTP2_CAUSE_REQUEST_ACCEPTED) -> 0;
@@ -112,8 +123,11 @@ gtp2_paa_to_epdg_eua(#v2_pdn_address_allocation{type = ipv4, address = Addr}) ->
                   ipv4 = Addr};
 gtp2_paa_to_epdg_eua(#v2_pdn_address_allocation{type = ipv6, address = Addr}) ->
         #epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv6,
-                  ipv6 = Addr}.
-%TODO: IPv4v6
+                  ipv6 = remove_v6_prefix_len_byte(Addr)};
+gtp2_paa_to_epdg_eua(#v2_pdn_address_allocation{type = ipv4v6, address = Addr}) ->
+        #epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv4v6,
+                  ipv4 = get_4_from_v4v6(Addr),
+                  ipv6 = get_6_from_v4v6(Addr)}.
 
 epdg_eua_to_gsup_pdp_address(#epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv4, ipv4 = Addr}) ->
         #{pdp_type_org => 1,
@@ -121,10 +135,14 @@ epdg_eua_to_gsup_pdp_address(#epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv4, ipv
 	  address => #{ ipv4 => Addr}};
 
 epdg_eua_to_gsup_pdp_address(#epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv6, ipv6 = Addr}) ->
-#{pdp_type_org => 1,
-        pdp_type_nr => ?GTP_PDP_ADDR_TYPE_NR_IPv6,
-        address => #{ ipv6 => Addr}}.
-%TODO: IPv4v6
+        #{pdp_type_org => 1,
+          pdp_type_nr => ?GTP_PDP_ADDR_TYPE_NR_IPv6,
+          address => #{ ipv6 => Addr}};
+
+epdg_eua_to_gsup_pdp_address(#epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv4v6, ipv4 = Addr4, ipv6 = Addr6}) ->
+        #{pdp_type_org => 1,
+          pdp_type_nr => ?GTP_PDP_ADDR_TYPE_NR_IPv4v6,
+          address => #{ ipv4 => Addr4, ipv6 => Addr6}}.
 
 % 3GPP TS 23.003 clause 19
 % Input: "<IMSI>@nai.epc.mnc<MNC>.mcc<MCC>.3gppnetwork.org"
