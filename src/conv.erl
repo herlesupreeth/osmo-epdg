@@ -41,7 +41,7 @@
 -export([ip_to_bin/1, bin_to_ip/1]).
 -export([cause_gtp2gsup/1]).
 -export([dia_rc_success/1, dia_rc_to_gsup_cause/1]).
--export([gtp2_paa_to_epdg_eua/1, epdg_eua_to_gsup_pdp_address/1]).
+-export([gtp2_paa_to_epdg_eua/1, pdp_address_to_gtp2_paa/2, epdg_eua_to_gsup_pdp_address/1]).
 -export([nai_to_imsi/1]).
 
 % ergw_aaa/src/ergw_aaa_3gpp_dict.erl
@@ -61,6 +61,9 @@ ip_to_bin(IP) when is_binary(IP) ->
         IP;
     bin_to_ip({_, _, _, _, _, _, _, _} = IP) ->
         IP.
+
+%% Add "IPv6 Prefix Length" to PAA (3GPP TS 29.274 Table 8.14).
+add_v6_prefix_len_byte(<< IPv6:16/binary >>) -> << 8, IPv6/binary >>.
 
 %% Remove "IPv6 Prefix Length" from PAA (3GPP TS 29.274 Table 8.14).
 remove_v6_prefix_len_byte(<<_:8, Rest/binary>>) -> Rest.
@@ -128,6 +131,13 @@ gtp2_paa_to_epdg_eua(#v2_pdn_address_allocation{type = ipv4v6, address = Addr}) 
         #epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv4v6,
                   ipv4 = get_4_from_v4v6(Addr),
                   ipv6 = get_6_from_v4v6(Addr)}.
+
+pdp_address_to_gtp2_paa(?GTP_PDP_ADDR_TYPE_NR_IPv4, Address) ->
+        #v2_pdn_address_allocation{type = ipv4, address = maps:get(ipv4, Address)};
+pdp_address_to_gtp2_paa(?GTP_PDP_ADDR_TYPE_NR_IPv6, Address) ->
+        #v2_pdn_address_allocation{type = ipv6, address = add_v6_prefix_len_byte(maps:get(ipv6, Address))};
+pdp_address_to_gtp2_paa(?GTP_PDP_ADDR_TYPE_NR_IPv4v6, Address) ->
+        #v2_pdn_address_allocation{type = ipv4v6, address = get_v4v6(maps:get(ipv4, Address), maps:get(ipv6, Address))}.
 
 epdg_eua_to_gsup_pdp_address(#epdg_eua{type_nr = ?GTP_PDP_ADDR_TYPE_NR_IPv4, ipv4 = Addr}) ->
         #{pdp_type_org => 1,

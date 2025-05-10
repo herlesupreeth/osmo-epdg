@@ -41,6 +41,7 @@
 -behaviour(gen_server).
 
 -include_lib("gtplib/include/gtp_packet.hrl").
+-include("conv.hrl").
 
 %% API Function Exports
 -export([start_link/6]).
@@ -48,7 +49,7 @@
 %% gen_server Function Exports
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 -export([code_change/3]).
--export([create_session_req/4, delete_session_req/1]).
+-export([create_session_req/6, delete_session_req/1]).
 
 %% Application Definitions
 -define(SERVER, ?MODULE).
@@ -144,13 +145,13 @@ init(State) ->
             lager:error("GTPv2C UDP socket open error: ~w~n", [Reason])
     end.
 
-create_session_req(Imsi, Apn, APCO, PGWAddrCandidateList) ->
-    gen_server:call(?SERVER, {gtpc_create_session_req, {Imsi, Apn, APCO, PGWAddrCandidateList}}).
+create_session_req(Imsi, Apn, APCO, PdpTypeNr, PdpAddress, PGWAddrCandidateList) ->
+    gen_server:call(?SERVER, {gtpc_create_session_req, {Imsi, Apn, APCO, PdpTypeNr, PdpAddress, PGWAddrCandidateList}}).
 
 delete_session_req(Imsi) ->
     gen_server:call(?SERVER, {gtpc_delete_session_req, {Imsi}}).
 
-handle_call({gtpc_create_session_req, {Imsi, Apn, APCO, PGWAddrCandidateList}}, {Pid, _Tag} = _From, State0) ->
+handle_call({gtpc_create_session_req, {Imsi, Apn, APCO, PdpTypeNr, PdpAddress, PGWAddrCandidateList}}, {Pid, _Tag} = _From, State0) ->
     RemoteAddrStr = pick_gtpc_remote_address(PGWAddrCandidateList, State0),
     lager:debug("Selected PGW Remote Address ~p~n", [RemoteAddrStr]),
     {ok, RemoteAddrInet} = inet_parse:address(RemoteAddrStr),
@@ -160,7 +161,8 @@ handle_call({gtpc_create_session_req, {Imsi, Apn, APCO, PGWAddrCandidateList}}, 
                                      raddr_str = RemoteAddrInet,
                                      raddr = RemoteAddrInet},
                         State0),
-    Req = gen_create_session_request(Sess0, APCO, State1),
+    Paa = conv:pdp_address_to_gtp2_paa(PdpTypeNr, PdpAddress),
+    Req = gen_create_session_request(Sess0, APCO, Paa, State1),
     tx_gtp(Req, State1),
     State2 = inc_seq_no(State1),
     lager:debug("Waiting for CreateSessionResponse~n", []),
@@ -514,6 +516,7 @@ gen_create_session_request(#gtp_session{imsi = Imsi,
                                     apn = Apn,
                                     local_control_tei = LocalCtlTEI} = Sess,
                            APCO,
+                           Paa,
                            #gtp_state{laddr = LocalAddr,
                                       laddr_gtpu = LocalAddrGtpu,
                                       restart_counter = RCnt,
@@ -548,7 +551,7 @@ gen_create_session_request(#gtp_session{imsi = Imsi,
             },
             #v2_access_point_name{instance = 0, apn = [Apn]},
             #v2_selection_mode{mode = 0},
-            #v2_pdn_address_allocation{type = ipv4, address = <<0,0,0,0>>},
+            Paa, %% v2_pdn_address_allocation
             #v2_bearer_context{group = BearersIE},
             #v2_recovery{restart_counter = RCnt},
             #v2_additional_protocol_configuration_options{instance = 0, config = APCO_decoded}
