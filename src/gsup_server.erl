@@ -296,13 +296,14 @@ rx_gsup(Socket, GsupMsgRx = #{message_type := send_auth_info_req, imsi := Imsi},
 	case maps:find(pdp_info_list, GsupMsgRx) of
 	{ok, [PdpInfo]} ->
 		#{pdp_context_id := _PDPCtxId,
-		  pdp_address := #{address := PdpAddress,
+		  pdp_address := #{address := PdpAddressRx,
 				   pdp_type_nr := PdpTypeNr,
 				   pdp_type_org := 241},
 		  access_point_name := Apn
 		} = PdpInfo,
-		case maps:is_key(ipv4,PdpAddress) or maps:is_key(ipv6,PdpAddress) of
-                        true -> ok; %% Address received so do nothing
+		case maps:is_key(ipv4,PdpAddressRx) or maps:is_key(ipv6,PdpAddressRx) of
+                        true -> %% Address received, use it
+				PdpAddress = PdpAddressRx;
                         false -> %% No address received from strongswan, use a default value
                                 PdpTypeNr = ?GTP_PDP_ADDR_TYPE_NR_IPv4,
                                 PdpAddress = #{ipv4 => <<0,0,0,0>>}
