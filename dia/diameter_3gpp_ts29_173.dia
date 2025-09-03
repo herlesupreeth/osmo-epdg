@@ -70,7 +70,7 @@
 		*[ Supported-Features ]
 		*[ Proxy-Info ]
 		*[ Route-Record ]
-		*[ AVP ] 
+		*[ AVP ]
 
 	;; 6.2.4 LCS-Routing-Info-Answer
 	RIA ::= < Diameter Header: 8388622, PXY >
@@ -83,7 +83,7 @@
 		[ Experimental-Result ]
 		*[ Supported-Features ]
 		[ User-Name ]
-		[ MSISDN ] 
+		[ MSISDN ]
 		[ LMSI ]
 		[ Serving-Node ]
 		*[ Additional-Serving-Node ]
@@ -93,7 +93,7 @@
 		*[ AVP ]
 		[ Failed-AVP ]
  		*[ Proxy-Info ]
-		*[ Route-Record ] 
+		*[ Route-Record ]
 
 @grouped
 
@@ -108,11 +108,11 @@ Serving-Node ::= <AVP Header: 2401 10415>
 	[ 3GPP-AAA-Server-Name ]
 	[ LCS-Capabilities-Sets ]
 	[ GMLC-Address ]
-	*[AVP] 
+	*[AVP]
 
 ;; 6.4.8
 Additional-Serving-Node ::= <AVP Header: 2406 10415>
-	[ SGSN-Number ] 
+	[ SGSN-Number ]
 	[ MME-Name ]
 	[ SGSN-Name ]
 	[ SGSN-Realm ]
@@ -121,4 +121,4 @@ Additional-Serving-Node ::= <AVP Header: 2406 10415>
 	[ 3GPP-AAA-Server-Name ]
 	[ LCS-Capabilities-Sets ]
 	[ GMLC-Address ]
-	*[AVP] 
+	*[AVP]
