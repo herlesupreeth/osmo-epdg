@@ -25,7 +25,7 @@
 
 @inherits diameter_gen_base_rfc6733
 @inherits diameter_gen_acct_rfc6733
-@inherits diameter_rfc7155_nasreq
+@inherits diameter_rfc4005_nasreq
 @inherits diameter_rfc4006_cc
 @inherits diameter_etsi_es283_034
 @inherits diameter_3gpp_base
