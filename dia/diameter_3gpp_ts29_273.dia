@@ -35,7 +35,7 @@
 @inherits diameter_3gpp_base
 @inherits diameter_3gpp_break_circles
 @inherits diameter_3gpp_ts29_212
-@inherits diameter_3gpp_ts29_272
+@inherits diameter_3gpp_ts29_272 AMBR APN-Configuration Context-Identifier Core-Network-Restrictions PDN-Type Trace-Data Trace-Reference UE-Usage-Type
 @inherits diameter_3gpp_ts32_299
 @inherits diameter_etsi_es283_034
 @inherits diameter_rfc4006_cc

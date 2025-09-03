@@ -33,19 +33,17 @@
 @inherits diameter_gen_base_rfc6733
 @inherits diameter_3gpp_base
 @inherits diameter_3gpp_ts29_229
+@inherits diameter_3gpp_ts29_273 3GPP-AAA-Server-Name
 @inherits diameter_3gpp_ts29_329
 @inherits diameter_3gpp_break_circles
 
 @avp_types
-
-	3GPP-AAA-Server-Name	318	DiameterIdentity	MV	;; from 29.273
 
 	LMSI			2400	OctetString		MV
 	Serving-Node		2401	Grouped			MV
 	MME-Name		2402	DiameterIdentity	MV
 	MSC-Number		2403	OctetString		MV
 	LCS-Capabilities-Sets	2404	Unsigned32		MV
-	GMLC-Address		2405	Address			MV
 	Additional-Serving-Node	2406	Grouped			MV
 	PPR-Address		2407	Address			MV
 	MME-Realm		2408	DiameterIdentity	V

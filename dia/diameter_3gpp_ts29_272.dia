@@ -35,7 +35,6 @@
 @inherits diameter_3gpp_ts29_214
 @inherits diameter_3gpp_ts29_229
 @inherits diameter_3gpp_ts29_329
-@inherits diameter_3gpp_ts29_173
 @inherits diameter_3gpp_ts32_299
 @inherits diameter_3gpp_break_circles
 
