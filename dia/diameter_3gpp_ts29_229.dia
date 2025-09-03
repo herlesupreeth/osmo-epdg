@@ -25,7 +25,7 @@
 
 @inherits diameter_gen_base_rfc6733
 @inherits diameter_etsi_es283_035 Line-Identifier
-@inherits diameter_rfc4005_nasreq
+@inherits diameter_rfc4005_nasreq Framed-Interface-Id Framed-IP-Address Framed-IPv6-Prefix
 
 ;; only attributes required by other applications are defined
 

@@ -25,7 +25,7 @@
 @id 1
 
 @inherits diameter_gen_base_rfc6733
-@inherits diameter_rfc4005_nasreq
+@inherits diameter_rfc4005_nasreq Callback-Id Callback-Number Called-Station-Id Calling-Station-Id Configuration-Token Connect-Info Framed-AppleTalk-Link Framed-AppleTalk-Network Framed-AppleTalk-Zone Framed-Compression Framed-Interface-Id Framed-IP-Address Framed-IP-Netmask Framed-IPv6-Pool Framed-IPv6-Prefix Framed-IPv6-Route Framed-IPX-Network Framed-MTU Framed-Pool Framed-Protocol Framed-Route Framed-Routing Filter-Id Idle-Timeout NAS-Filter-Rule NAS-Identifier NAS-IP-Address NAS-IPv6-Address NAS-Port NAS-Port-Id NAS-Port-Type Originating-Line-Info Port-Limit QoS-Filter-Rule Reply-Message Service-Type State Tunneling
 
 ;; ===========================================================================
 
