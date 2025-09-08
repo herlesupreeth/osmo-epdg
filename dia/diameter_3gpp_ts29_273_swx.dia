@@ -43,6 +43,7 @@
 @inherits diameter_3gpp_ts32_299
 @inherits diameter_etsi_es283_034
 @inherits diameter_rfc4004
+@inherits diameter_rfc4005_nasreq Framed-Interface-Id Framed-IP-Address Framed-IPv6-Prefix
 @inherits diameter_rfc4006_cc
 @inherits diameter_rfc5447
 @inherits diameter_rfc5580
