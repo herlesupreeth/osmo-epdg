@@ -48,27 +48,31 @@
 % "har.localdomain","localdomain","localdomain", % origin host, origin realm, dest realm
 encode_mar_test() ->
     % copied from ttcn3 tests
-    AMar = {'MAR',
-        ["epdg.localdomain",";","1818836830",";","1",";","nonode@nohost"],
-        1, % auth session state
-        undefined, undefined, undefined, % origin host, origin realm, dest realm
-        "262426399104394",
-        {'Vendor-Specific-Application-Id',10415,[16777265],[]},
-        {'SIP-Auth-Data-Item',[],["EAP-AKA"],[],[],[],[],[],[],[<<255,255,255,254>>],[],[],[],[]},
-        1,[],1,[],[],[],[],[],[],[],[]},
-    AMar2 = AMar#'MAR'{
-        'Origin-Host' = "origin",
-        'Origin-Realm' = "foo",
-        'Destination-Host' = ["hss.localdomain"],
-        'Destination-Realm' = "localdomain"},
+    SessionId = ["epdg.localdomain",";","1818836830",";","1",";","nonode@nohost"],
+    Vendor = #'Vendor-Specific-Application-Id'{'Vendor-Id' = 10415,
+                                             'Auth-Application-Id' = [16777265]},
+    AMar = #'MAR'{'Session-Id' = SessionId,
+                  'Origin-Host' = "origin",
+                  'Origin-Realm' = "foo",
+                  'Destination-Host' = ["hss.localdomain"],
+                  'Destination-Realm' = "localdomain",
+                  'Auth-Session-State' = 1,
+                  'User-Name' = "262426399104394",
+                  'Vendor-Specific-Application-Id' = Vendor,
+                  'SIP-Auth-Data-Item' = #'SIP-Auth-Data-Item'{
+                      'SIP-Authentication-Scheme' = ["EAP-AKA"],
+                      'Framed-IP-Address' = [<<255,255,255,254>>]},
+                  'SIP-Number-Auth-Items' = 1,
+                  'RAT-Type' = 1},
 
     Hdr = #diameter_header{version = 1,
-        end_to_end_id = 23,
-        hop_by_hop_id = 42},
-    Encoded = diameter_codec:encode(diameter_3gpp_ts29_273_swx,
+                           end_to_end_id = 23,
+                           hop_by_hop_id = 42},
+    Encoded = diameter_codec:encode(
+        diameter_3gpp_ts29_273_swx,
         #{ordered_encode => true},
         #diameter_packet{header = Hdr,
-                         msg = AMar2}),
+                         msg = AMar}),
     ?LOG_DEBUG("Diameter encoded as: ~p", [Encoded]),
 
     <<1,0,1,32,192,0,1,47,1,0,0,49,0,0,0,42,0,0,0,23,0,0,
