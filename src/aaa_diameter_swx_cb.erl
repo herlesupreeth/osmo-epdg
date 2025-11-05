@@ -149,14 +149,26 @@ handle_request(#diameter_packet{msg = Req, errors = []}, _SvcName, {_, Caps}) wh
             case DeregReason of
                 #'Deregistration-Reason'{'Reason-Code' = ?'REASON-CODE_PERMANENT_TERMINATION'} ->
                     case aaa_ue_fsm:ev_rx_swx_rtr(Pid) of
-                        {error, _} -> aaa_ue_fsm:stop(Pid);
-                        _ -> ok
+                        {error, dereg_in_progress} ->
+                            Res = [],
+                            %% TS 29.229 6.2.2.1 DIAMETER_ERROR_USER_UNKNOWN
+                            ERes = #'Experimental-Result'{'Vendor-Id' = ?VENDOR_ID_3GPP,
+                                                        'Experimental-Result-Code' = 5001};
+                        {error, _} ->
+                            aaa_ue_fsm:stop(Pid), % unknown error, make sure we tear down.
+                            Res = [],
+                            %% TS 29.229 6.2.2.1 DIAMETER_ERROR_USER_UNKNOWN
+                            ERes = #'Experimental-Result'{'Vendor-Id' = ?VENDOR_ID_3GPP,
+                                                        'Experimental-Result-Code' = 5001};
+                        _ ->
+                            Res = 2001, %% Success
+                            ERes = []
                     end;
                 _ ->
-                    aaa_ue_fsm:stop(Pid)
-            end,
-            Res = 2001, %% Success
-            ERes = [];
+                    aaa_ue_fsm:stop(Pid),
+                    Res = 2001, %% Success
+                    ERes = []
+            end;
         undefined ->
             Res = [],
             %% TS 29.229 6.2.2.1 DIAMETER_ERROR_USER_UNKNOWN

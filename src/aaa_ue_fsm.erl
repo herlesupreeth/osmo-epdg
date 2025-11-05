@@ -451,7 +451,7 @@ state_authenticated_wait_swx_saa({call, From}, {rx_swx_saa, Result}, Data) ->
 state_authenticated_wait_swx_saa({call, From}, rx_swx_rtr, Data) ->
     lager:info("ue_fsm state_authenticated_wait_swx_saa event=rx_swx_rtr ~p~n", [Data]),
     %% We are already tearing down in an ordered manner, accept and do nothing.
-    {keep_state, Data, [{reply,From,ok}]}.
+    {keep_state, Data, [{reply,From,{error,dereg_in_progress}}]}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% state_dereg_net_initiated_wait_s6b_asa:
@@ -469,7 +469,7 @@ state_dereg_net_initiated_wait_s6b_asa({call, From}, {rx_s6b_asa, _Result}, Data
 state_dereg_net_initiated_wait_s6b_asa({call, From}, rx_swx_rtr, Data) ->
     lager:info("ue_fsm state_dereg_net_initiated_wait_s6b_asa event=rx_swx_rtr ~p~n", [Data]),
     %% We are already tearing down in an ordered manner, accept and do nothing.
-    {keep_state, Data, [{reply,From,ok}]};
+    {keep_state, Data, [{reply,From,{error,dereg_in_progress}}]};
 
 state_dereg_net_initiated_wait_s6b_asa({call, From}, Ev, Data) ->
         lager:notice("ue_fsm state_dereg_net_initiated_wait_s6b_asa: Unexpected call event ~p, ~p~n", [Ev, Data]),
@@ -494,7 +494,7 @@ state_dereg_net_initiated_wait_swm_asa({call, From}, rx_swm_asa, Data) ->
 state_dereg_net_initiated_wait_swm_asa({call, From}, rx_swx_rtr, Data) ->
     lager:info("ue_fsm state_dereg_net_initiated_wait_swm_asa event=rx_swx_rtr ~p~n", [Data]),
     %% We are already tearing down in an ordered manner, accept and do nothing.
-    {keep_state, Data, [{reply,From,ok}]};
+    {keep_state, Data, [{reply,From,{error,dereg_in_progress}}]};
 
 state_dereg_net_initiated_wait_swm_asa({call, From}, Ev, Data) ->
         lager:notice("ue_fsm state_dereg_net_initiated_wait_swm_asa: Unexpected call event ~p, ~p~n", [Ev, Data]),
