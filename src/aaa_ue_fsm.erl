@@ -256,7 +256,12 @@ state_new({call, From}, {rx_swm_der_auth_compl, Apn}, Data) ->
         case aaa_diameter_swx:server_assignment_request(Data#ue_fsm_data.imsi, 1, Apn, []) of
         ok -> {next_state, state_wait_swx_saa, Data, [{reply,From,ok}]};
         {error, Err} -> {keep_state, Data, [{reply,From,{error, Err}}]}
-        end.
+        end;
+
+state_new({call, From}, rx_swx_rtr, Data) ->
+        lager:info("ue_fsm state_new event=rx_swx_rtr ~p~n", [Data]),
+        %% No need to inform anybody else, tear down FSM:
+        {stop_and_reply, normal, [{reply,From,ok}], Data}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% state_wait_swx_maa:
@@ -268,7 +273,12 @@ state_wait_swx_maa(enter, _OldState, Data) ->
 state_wait_swx_maa({call, From}, {rx_swx_maa, Result}, Data) ->
         lager:info("ue_fsm state_wait_swx_maa event=rx_swx_maa, ~p~n", [Data]),
         aaa_diameter_swm:tx_dea_auth_response(Data#ue_fsm_data.imsi, Result),
-        {next_state, state_new, Data, [{reply,From,ok}]}.
+        {next_state, state_new, Data, [{reply,From,ok}]};
+
+state_wait_swx_maa({call, From}, rx_swx_rtr, Data) ->
+        lager:info("ue_fsm state_wait_swx_maa event=rx_swx_rtr ~p~n", [Data]),
+        %% No need to inform anybody else, tear down FSM:
+        {stop_and_reply, normal, [{reply,From,ok}], Data}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% state_wait_swx_saa:
@@ -286,7 +296,12 @@ state_wait_swx_saa({call, From}, {rx_swx_saa, Result}, Data) ->
         {ok, _SAType, ResInfo} ->
                 aaa_diameter_swm:tx_dea_auth_compl_response(Data#ue_fsm_data.imsi, {ok, ResInfo}),
                 {next_state, state_authenticated, Data, [{reply,From,ok}]}
-        end.
+        end;
+
+state_wait_swx_saa({call, From}, rx_swx_rtr, Data) ->
+        lager:info("ue_fsm state_wait_swx_saa event=rx_swx_rtr ~p~n", [Data]),
+        %% No need to inform anybody else, tear down FSM:
+        {stop_and_reply, normal, [{reply,From,ok}], Data}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% state_authenticated:
@@ -431,7 +446,12 @@ state_authenticated_wait_swx_saa({call, From}, {rx_swx_saa, Result}, Data) ->
                         Data1 = Data#ue_fsm_data{pgw_sess_active = false, s6b_resp_pid = undefined},
                         {next_state, state_new, Data1, [{reply,From,ok}]}
                 end
-        end.
+        end;
+
+state_authenticated_wait_swx_saa({call, From}, rx_swx_rtr, Data) ->
+    lager:info("ue_fsm state_authenticated_wait_swx_saa event=rx_swx_rtr ~p~n", [Data]),
+    %% We are already tearing down in an ordered manner, accept and do nothing.
+    {keep_state, Data, [{reply,From,ok}]}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% state_dereg_net_initiated_wait_s6b_asa:
@@ -445,6 +465,11 @@ state_dereg_net_initiated_wait_s6b_asa(enter, _OldState, Data) ->
 
 state_dereg_net_initiated_wait_s6b_asa({call, From}, {rx_s6b_asa, _Result}, Data) ->
         {next_state, state_dereg_net_initiated_wait_swm_asa, Data, [{reply,From,ok}]};
+
+state_dereg_net_initiated_wait_s6b_asa({call, From}, rx_swx_rtr, Data) ->
+    lager:info("ue_fsm state_dereg_net_initiated_wait_s6b_asa event=rx_swx_rtr ~p~n", [Data]),
+    %% We are already tearing down in an ordered manner, accept and do nothing.
+    {keep_state, Data, [{reply,From,ok}]};
 
 state_dereg_net_initiated_wait_s6b_asa({call, From}, Ev, Data) ->
         lager:notice("ue_fsm state_dereg_net_initiated_wait_s6b_asa: Unexpected call event ~p, ~p~n", [Ev, Data]),
@@ -465,6 +490,11 @@ state_dereg_net_initiated_wait_swm_asa(enter, _OldState, Data) ->
 
 state_dereg_net_initiated_wait_swm_asa({call, From}, rx_swm_asa, Data) ->
         {stop_and_reply, normal, [{reply,From,ok}], Data};
+
+state_dereg_net_initiated_wait_swm_asa({call, From}, rx_swx_rtr, Data) ->
+    lager:info("ue_fsm state_dereg_net_initiated_wait_swm_asa event=rx_swx_rtr ~p~n", [Data]),
+    %% We are already tearing down in an ordered manner, accept and do nothing.
+    {keep_state, Data, [{reply,From,ok}]};
 
 state_dereg_net_initiated_wait_swm_asa({call, From}, Ev, Data) ->
         lager:notice("ue_fsm state_dereg_net_initiated_wait_swm_asa: Unexpected call event ~p, ~p~n", [Ev, Data]),
