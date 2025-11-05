@@ -454,7 +454,7 @@ state_dereg_net_initiated_wait_s6b_asa(state_timeout, s6b_asa_timeout, Data) ->
         {next_state, state_dereg_net_initiated_wait_swm_asa, Data}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% state_dereg_net_initiated_wait_s6b_asa:
+%% state_dereg_net_initiated_wait_swm_asa:
 %% HSS asked us to do deregistration towards the user.
 %% S6b (PGW) was already torn down. Now transmit SWm ASR towards ePDG and wait for ASA back.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
