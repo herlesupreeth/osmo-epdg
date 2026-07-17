@@ -10,7 +10,7 @@
   1},
  {<<"gen_netlink">>,
   {git,"https://github.com/osmocom/gen_netlink",
-       {ref,"0de39ae6496fc55a145795c45e4b3119a9ee777c"}},
+       {ref,"fb4cbfbc750deb263035c11f11e4b0616efb71dc"}},
   1},
  {<<"gen_socket">>,
   {git,"https://github.com/osmocom/gen_socket",
