@@ -422,17 +422,28 @@ rx_gtp(Req = #gtp{version = v2, type = create_bearer_request, ie = IEs}, State) 
         {noreply, State};
     Sess ->
         #{{v2_bearer_context,0} := #v2_bearer_context{instance = 0, group = BearerIE}} = IEs,
-        #{{v2_eps_bearer_id,0} := #v2_eps_bearer_id{instance = 0, eps_bearer_id = Ebi}} = BearerIE,
-        #{{v2_fully_qualified_tunnel_endpoint_identifier,Ebi} :=
+        % EPS Bearer ID: prefer the one carried inside the bearer context. Some
+        % PGWs send EBI=0 there and instead place the real EBI at the top level.
+        Ebi = case BearerIE of
+                  #{ {v2_eps_bearer_id,0} := #v2_eps_bearer_id{eps_bearer_id = E} } when E > 0 -> E;
+                  _ -> #{ {v2_eps_bearer_id,0} := #v2_eps_bearer_id{eps_bearer_id = Etop} } = IEs, Etop
+              end,
+        % FIXME: open5gs incorrectly set instance to 1 while it should have been 4 as per 3GPP TS 29.274, Table 7.2.3-2.
+        #{{v2_fully_qualified_tunnel_endpoint_identifier,1} :=
             #v2_fully_qualified_tunnel_endpoint_identifier{
-                instance = Ebi,
+                instance = 1,
                 interface_type = _Interface,
                 key = RemoteDataTei, ipv4 = _IP4, ipv6 = _IP6}} = BearerIE,
-        Sess1 = gtp_session_add_bearer(Sess, #gtp_bearer{ebi = Ebi, remote_data_tei = RemoteDataTei}),
+        % Update the (default) bearer's remote data TEI so the ePDG can send
+        % user-plane traffic towards the PGW. The local data TEI was already
+        % assigned when the session was created.
+        OldBearer = gtp_session_find_bearer_by_ebi(Sess, Ebi),
+        NewBearer = OldBearer#gtp_bearer{remote_data_tei = RemoteDataTei},
+        Sess1 = gtp_session_update_bearer(Sess, OldBearer, NewBearer),
         State1 = update_gtp_session(Sess, Sess1, State),
         Resp = gen_create_bearer_response(Req, Sess1, request_accepted, State1),
         tx_gtp(Resp, State1),
-        {noreply, State}
+        {noreply, State1}
     end;
 
 rx_gtp(Req = #gtp{version = v2, type = delete_bearer_request, ie = IEs}, State) ->
