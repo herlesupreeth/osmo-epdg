@@ -47,7 +47,7 @@
 -export([received_swm_reauth_request/1, received_swm_dea_auth_response/2,
          received_swm_dea_auth_compl_response/2, received_swm_auth_answer/2,
          received_swm_session_termination_answer/2, received_swm_abort_session_request/1]).
--export([received_gtpc_create_session_response/2, received_gtpc_delete_session_response/2, received_gtpc_delete_bearer_request/1]).
+-export([received_gtpc_create_session_response/2, received_gtpc_delete_session_response/2, received_gtpc_delete_bearer_request/4, received_gtpc_update_bearer_request/3, received_gtpc_create_bearer_request/4]).
 -export([state_new/3,
          state_wait_auth_resp/3,
          state_authenticating/3,
@@ -215,10 +215,28 @@ received_gtpc_delete_session_response(Pid, Msg) ->
                 {error, Err}
         end.
 
-received_gtpc_delete_bearer_request(Pid) ->
-        lager:info("ue_fsm received_gtpc_delete_bearer_request~n", []),
+received_gtpc_delete_bearer_request(Pid, Ebi, LocalTEID, RemoteTEID) ->
+        lager:info("ue_fsm received_gtpc_delete_bearer_request Ebi=~p LocalTEID=~p RemoteTEID=~p~n", [Ebi, LocalTEID, RemoteTEID]),
         try
-        gen_statem:call(Pid, received_gtpc_delete_bearer_request)
+        gen_statem:call(Pid, {received_gtpc_delete_bearer_request, Ebi, LocalTEID, RemoteTEID})
+        catch
+        exit:Err ->
+                {error, Err}
+        end.
+
+received_gtpc_update_bearer_request(Pid, Ebi, QoS) ->
+        lager:info("ue_fsm received_gtpc_update_bearer_request: Ebi=~p QoS=~p~n", [Ebi, QoS]),
+        try
+        gen_statem:call(Pid, {received_gtpc_update_bearer_request, Ebi, QoS})
+        catch
+        exit:Err ->
+                {error, Err}
+        end.
+
+received_gtpc_create_bearer_request(Pid, LocalTEID, RemoteTEID, PeerIP) ->
+        lager:info("ue_fsm received_gtpc_create_bearer_request: LocalTEID=~p RemoteTEID=~p PeerIP=~p~n", [LocalTEID, RemoteTEID, PeerIP]),
+        try
+        gen_statem:call(Pid, {received_gtpc_create_bearer_request, LocalTEID, RemoteTEID, PeerIP})
         catch
         exit:Err ->
                 {error, Err}
@@ -384,7 +402,7 @@ state_authenticated({call, From}, purge_ms_request, Data) ->
         Data1 = Data#ue_fsm_data{tear_down_gsup_needed = true},
         {next_state, state_wait_swm_session_termination_answer, Data1, [{reply,From,ok}]};
 
-state_authenticated({call, From}, received_gtpc_delete_bearer_request, Data) ->
+state_authenticated({call, From}, {received_gtpc_delete_bearer_request, _Ebi, _LocalTEID, _RemoteTEID}, Data) ->
         lager:info("ue_fsm state_authenticated event=received_gtpc_delete_bearer_request, ~p~n", [Data]),
         Data1 = Data#ue_fsm_data{tear_down_gsup_needed = false},
         {next_state, state_dereg_pgw_initiated_wait_cancel_location_res, Data1, [{reply,From,ok}]};
@@ -482,14 +500,36 @@ state_active({call, From}, purge_ms_request, Data) ->
         {error, Err} -> {keep_state, Data1, [{reply,From,{error, Err}}]}
         end;
 
-state_active({call, From}, received_gtpc_delete_bearer_request, Data) ->
-        lager:info("ue_fsm state_active event=received_gtpc_delete_bearer_request, ~p~n", [Data]),
-        gtp_u_tun:delete_pdp_context(Data#ue_fsm_data.tun_pdp_ctx),
-        Data1 = Data#ue_fsm_data{tun_pdp_ctx = undefined,
-                                 tear_down_gsup_needed = false,
-                                 tear_down_s2b_needed = false,
-                                 tear_down_tx_swm_asa_needed = false},
-        {next_state, state_dereg_pgw_initiated_wait_cancel_location_res, Data1, [{reply,From,ok}]};
+state_active({call, From}, {received_gtpc_delete_bearer_request, Ebi, LocalTEID, RemoteTEID}, Data) ->
+        lager:info("ue_fsm state_active event=received_gtpc_delete_bearer_request Ebi=~p LocalTEID=~p RemoteTEID=~p, ~p~n", [Ebi, LocalTEID, RemoteTEID, Data]),
+        case Ebi =< 5 of
+        true ->
+                % Default bearer (EBI=5) deleted -> full PDN disconnection
+                gtp_u_tun:delete_pdp_context(Data#ue_fsm_data.tun_pdp_ctx),
+                Data1 = Data#ue_fsm_data{tun_pdp_ctx = undefined,
+                                         tear_down_gsup_needed = false,
+                                         tear_down_s2b_needed = false,
+                                         tear_down_tx_swm_asa_needed = false},
+                {next_state, state_dereg_pgw_initiated_wait_cancel_location_res, Data1, [{reply,From,ok}]};
+        false ->
+                % Dedicated bearer (EBI>=6) deleted -> no separate kernel tunnel was
+                % created for this bearer (kernel GTP module doesn't support multiple
+                % tunnels per UE IP), so just stay active:
+                {keep_state, Data, [{reply,From,ok}]}
+        end;
+
+state_active({call, From}, {received_gtpc_update_bearer_request, _Ebi, _QoS}, Data) ->
+        lager:info("ue_fsm state_active event=received_gtpc_update_bearer_request, Ebi=~p QoS=~p, ~p~n", [_Ebi, _QoS, Data]),
+        {keep_state, Data, [{reply,From,ok}]};
+
+state_active({call, From}, {received_gtpc_create_bearer_request, LocalTEID, RemoteTEID, PeerIP}, Data) ->
+        lager:info("ue_fsm state_active event=received_gtpc_create_bearer_request, LocalTEID=~p RemoteTEID=~p PeerIP=~p, ~p~n", [LocalTEID, RemoteTEID, PeerIP, Data]),
+        %% NOTE: Kernel GTP module (gtp.ko) does not support multiple tunnels sharing
+        %% the same UE IP (ms_address). Creating a separate kernel tunnel for a dedicated
+        %% bearer would cause g_pdu errors since the kernel cannot forward packets for
+        %% the second TEID. The dedicated bearer data plane traffic will flow through
+        %% the default bearer's kernel tunnel instead.
+        {keep_state, Data, [{reply,From,ok}]};
 
 %%% network (HSS/AAA) initiated de-registation requested:
 state_active({call, From}, received_swm_asr, Data) ->
