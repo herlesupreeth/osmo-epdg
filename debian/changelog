@@ -1,3 +1,39 @@
+osmo-epdg (0.1.2) unstable; urgency=medium
+
+  [ clufn-sudo ]
+  * Add required conversions for IPv6 and IPv4v6 support
+
+  [ clufn ]
+  * Enable the use of an UE requested IP type and address to be used for gtpv2 PDN Address Allocation
+
+  [ Pau Espin Pedrol ]
+  * gsup: Fix rx of AuthInfoReq without IP addr val
+  * rebar.config: Update rebar3_diameter_compiler from 0.8.0 to v0.8.1
+  * dia/diameter_3gpp_ts29_173.dia: Fix trailing whitespace
+  * dia/diameter_3gpp_ts29_273.dia: Fix trailing whitespace
+  * dia/diameter_3gpp_ts29_229.dia: inherit only Line-Identifier
+  * dia/diameter_3ggp_ts32_299.dia: Inherit RFC4005 instead of RFC7155
+  * dia: restrict AVPs inherited from RFC4005
+  * Remove duplicate 3GPP-AAA-Server-Name definition and break 3-way circular dependency
+  * cosmetic: Fix typo in code documentation
+  * aaa_ue_fsm: Avoid immediate stop of fsm during 2nd SWx RTR
+  * aaa_diameter_swx: Avoid answering RTR with Success if already deregistering
+
+  [ Alexander Couzens ]
+  * s2b: set correct instance values for Bearers
+  * diameter_3gpp_ts29_273_swx: add missing include for MAR
+  * aaa_diameter_swx_tests: explicitly set Framed-IP-Address
+  * aaa_diameter_swx_tests: use MAR record to improve readability
+
+  [ Oliver Smith ]
+  * editorconfig: new file
+
+  [ Vadim Yanitskiy ]
+  * rebar.config: use more recent rebar3_diameter_compiler
+  * rebar.lock: use a more recent version of gen_netlink
+
+ -- Oliver Smith <osmith@sysmocom.de>  Tue, 21 Jul 2026 14:12:41 +0200
+
 osmo-epdg (0.1.1) unstable; urgency=medium
 
   [ Harald Welte ]
