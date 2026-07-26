@@ -606,7 +606,8 @@ gen_create_bearer_response(Req = #gtp{version = v2, type = create_bearer_request
         key = Bearer#gtp_bearer.remote_data_tei,
         ipv4 = _IP4,
         ipv6 = _IP6
-        }
+        },
+        #v2_cause{v2_cause = GtpCause}
     ],
     IEs = [#v2_cause{v2_cause = GtpCause},
            #v2_bearer_context{group = BearersIE},
