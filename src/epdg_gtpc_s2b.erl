@@ -433,17 +433,12 @@ rx_gtp(Req = #gtp{version = v2, type = create_bearer_request, ie = IEs}, State) 
             #v2_fully_qualified_tunnel_endpoint_identifier{
                 instance = 1,
                 interface_type = _Interface,
-                key = RemoteDataTei, ipv4 = _IP4, ipv6 = _IP6}} = BearerIE,
-        % Update the (default) bearer's remote data TEI so the ePDG can send
-        % user-plane traffic towards the PGW. The local data TEI was already
-        % assigned when the session was created.
-        OldBearer = gtp_session_find_bearer_by_ebi(Sess, Ebi),
-        NewBearer = OldBearer#gtp_bearer{remote_data_tei = RemoteDataTei},
-        Sess1 = gtp_session_update_bearer(Sess, OldBearer, NewBearer),
+                key = RemoteDataTei, ipv4 = IP4, ipv6 = IP6}} = BearerIE,
+        Sess1 = gtp_session_add_bearer(Sess, #gtp_bearer{ebi = Ebi, remote_data_tei = RemoteDataTei}),
         State1 = update_gtp_session(Sess, Sess1, State),
-        Resp = gen_create_bearer_response(Req, Sess1, request_accepted, State1),
+        Resp = gen_create_bearer_response(Req, Sess1, request_accepted, State1, IP4, IP6),
         tx_gtp(Resp, State1),
-        {noreply, State1}
+        {noreply, State}
     end;
 
 rx_gtp(Req = #gtp{version = v2, type = delete_bearer_request, ie = IEs}, State) ->
@@ -588,7 +583,8 @@ gen_create_bearer_response(Req = #gtp{version = v2, type = create_bearer_request
                            Sess = #gtp_session{remote_control_tei = RemoteCtlTEI},
                            GtpCause,
                            #gtp_state{laddr_gtpu = LocalAddrGtpu,
-                                      restart_counter = RCnt}) ->
+                                      restart_counter = RCnt},
+                           _IP4, _IP6) ->
     Bearer = gtp_session_default_bearer(Sess),
     BearersIE = [#v2_bearer_level_quality_of_service{
         pci = 1, pl = 10, pvi = 0, label = 8,
@@ -603,6 +599,13 @@ gen_create_bearer_response(Req = #gtp{version = v2, type = create_bearer_request
         interface_type = 31, %% "S2b-U ePDG GTP-U"
         key = Bearer#gtp_bearer.local_data_tei,
         ipv4 = conv:ip_to_bin(LocalAddrGtpu)
+        },
+        #v2_fully_qualified_tunnel_endpoint_identifier{
+        instance = 9, %% "S2b-U PGW F-TEID", Table 7.2.4-2
+        interface_type = 33, %% "S2b-U PGW GTP-U"
+        key = Bearer#gtp_bearer.remote_data_tei,
+        ipv4 = _IP4,
+        ipv6 = _IP6
         }
     ],
     IEs = [#v2_cause{v2_cause = GtpCause},
