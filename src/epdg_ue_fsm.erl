@@ -294,6 +294,17 @@ state_new({call, From}, purge_ms_request, Data) ->
 state_wait_auth_resp(enter, _OldState, Data) ->
         {keep_state, Data, {state_timeout,?TIMEOUT_VAL_WAIT_SWm_ANSWER,swm_der_timeout}};
 
+state_wait_auth_resp({call, _From} = EvType, {auth_request, _PdpTypeNr, _PdpAddress, _Apn, _EAP} = EvContent, Data) ->
+        %% Repeated auth_request while we are still awaiting the SWx DEA. This
+        %% happens when the first attempt stalled -- e.g. the SWx/HSS Diameter
+        %% peer was not up yet and aaa_ue_fsm returned {error, no_connection} --
+        %% and the GSUP Send-Auth-Info is retransmitted before our timeout
+        %% fires. Without this clause gen_statem finds no matching function
+        %% clause and the FSM crashes (function_clause). Re-drive the DER (the
+        %% SWx peer may be up by now).
+        lager:info("ue_fsm state_wait_auth_resp event=auth_request (retransmit), re-driving DER, ~p~n", [Data]),
+        ev_handle(EvType, EvContent, Data);
+
 state_wait_auth_resp({call, From}, {received_swm_dea_auth_response, Result}, Data) ->
         lager:info("ue_fsm state_wait_auth_resp event=received_swm_dea_auth_response Result=~p, ~p~n", [Result, Data]),
         case Result of
